@@ -59,7 +59,9 @@ def main() -> None:
             sys.stderr.buffer.write(result.stdout)
         sys.exit(result.returncode)
 
-    json.dump({"output": result.stdout.decode().strip()}, sys.stdout)
+    json.dump(
+        {"output": result.stdout.replace(b"\x00", b"").decode().strip()}, sys.stdout
+    )
 
 
 main()

@@ -49,10 +49,11 @@ def run_cli(args: list[str]) -> dict:
         if result.stdout:
             sys.stderr.buffer.write(result.stdout)
         sys.exit(result.returncode)
+    stdout = result.stdout.replace(b"\x00", b"")
     try:
-        return json.loads(result.stdout)
+        return json.loads(stdout)
     except json.JSONDecodeError:
-        return {"output": result.stdout.decode().strip()}
+        return {"output": stdout.decode().strip()}
 
 
 def main() -> None:
