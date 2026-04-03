@@ -10,13 +10,25 @@ from pathlib import Path
 def main():
     config_path = Path("config.json")
     if not config_path.exists():
-        print("config.json not found.", file=sys.stderr)
-        sys.exit(1)
+        json.dump(
+            {
+                "status": "skipped",
+                "message": "config.json not found, auth will happen on first tool use",
+            },
+            sys.stdout,
+        )
+        return
     config = json.loads(config_path.read_text())
     li_at = config.get("li_at")
     if not li_at:
-        print("li_at is missing in config.json.", file=sys.stderr)
-        sys.exit(1)
+        json.dump(
+            {
+                "status": "skipped",
+                "message": "li_at not configured yet, auth will happen on first tool use",
+            },
+            sys.stdout,
+        )
+        return
 
     cli = (Path(__file__).resolve().parent / "bin" / "linkedin-cli").resolve()
     result = subprocess.run(
