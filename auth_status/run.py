@@ -60,7 +60,13 @@ def main() -> None:
         sys.exit(result.returncode)
 
     json.dump(
-        {"output": result.stdout.replace(b"\x00", b"").decode().strip()}, sys.stdout
+        {
+            "output": result.stdout.replace(b"\x00", b"")
+            .replace(b"\\u0000", b"")
+            .decode()
+            .strip()
+        },
+        sys.stdout,
     )
 
 

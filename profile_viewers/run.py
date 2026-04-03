@@ -47,7 +47,7 @@ def run_cli(args: list[str]) -> dict:
         if result.stdout:
             sys.stderr.buffer.write(result.stdout)
         sys.exit(result.returncode)
-    stdout = result.stdout.replace(b"\x00", b"")
+    stdout = result.stdout.replace(b"\x00", b"").replace(b"\\u0000", b"")
     try:
         return json.loads(stdout)
     except json.JSONDecodeError:
