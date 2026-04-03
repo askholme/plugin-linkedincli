@@ -59,15 +59,14 @@ def main() -> None:
             sys.stderr.buffer.write(result.stdout)
         sys.exit(result.returncode)
 
-    json.dump(
-        {
-            "output": result.stdout.replace(b"\x00", b"")
-            .replace(b"\\u0000", b"")
-            .decode()
-            .strip()
-        },
-        sys.stdout,
-    )
+    output = {
+        "output": result.stdout.replace(b"\x00", b"")
+        .replace(b"\\u0000", b"")
+        .decode()
+        .strip()
+    }
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()

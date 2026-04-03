@@ -54,6 +54,19 @@ def run_cli(args: list[str]) -> dict:
         return {"output": stdout.decode().strip()}
 
 
+def _compact_profile_me(raw: dict) -> dict:
+    mini = raw.get("miniProfile") or {}
+    return {
+        "first_name": mini.get("firstName") or "",
+        "last_name": mini.get("lastName") or "",
+        "headline": mini.get("occupation") or "",
+        "urn": mini.get("entityUrn") or "",
+        "public_id": mini.get("publicIdentifier") or "",
+        "member_id": raw.get("plainId"),
+        "premium": bool(raw.get("premiumSubscriber")),
+    }
+
+
 def main() -> None:
     """Retrieve the authenticated user's own LinkedIn profile."""
     params = json.load(sys.stdin)
@@ -64,7 +77,10 @@ def main() -> None:
 
     ensure_auth()
 
-    json.dump(run_cli(["profile", "me"]), sys.stdout)
+    raw = run_cli(["profile", "me"])
+    output = _compact_profile_me(raw)
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()

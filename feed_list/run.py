@@ -3,12 +3,15 @@
 # dependencies = []
 # ///
 
-import json, subprocess, sys
+import json, re, subprocess, sys
 from pathlib import Path
 
 CLI = (Path(__file__).resolve().parent.parent / "bin" / "linkedin-cli").resolve()
 
 KNOWN_PARAMS = {"count", "start"}
+
+_UPDATE_V2_KEY = "com.linkedin.voyager.feed.render.UpdateV2"
+_ACTIVITY_RE = re.compile(r"(urn:li:activity:[^,)]+)")
 
 
 def ensure_auth() -> None:
@@ -56,6 +59,50 @@ def run_cli(args: list[str]) -> dict:
         return {"output": stdout.decode().strip()}
 
 
+def _extract_activity_urn(entity_urn: str) -> str:
+    """Extract urn:li:activity:... from a feed update entityUrn."""
+    m = _ACTIVITY_RE.search(entity_urn or "")
+    return m.group(1) if m else (entity_urn or "")
+
+
+def _compact_feed(raw: dict) -> dict:
+    elements = []
+    for el in raw.get("elements") or []:
+        entity_urn = el.get("entityUrn") or ""
+        activity_urn = _extract_activity_urn(entity_urn)
+        v2 = (el.get("value") or {}).get(_UPDATE_V2_KEY) or {}
+        actor = v2.get("actor") or {}
+        author = (actor.get("name") or {}).get("text") or ""
+        commentary = v2.get("commentary") or {}
+        text = ((commentary.get("text") or {}).get("text") or "") if commentary else ""
+        social = v2.get("socialDetail") or {}
+        counts = social.get("totalSocialActivityCounts") or {}
+        likes = counts.get("numLikes") or 0
+        comments = counts.get("numComments") or 0
+        url = (
+            f"https://www.linkedin.com/feed/update/{activity_urn}"
+            if activity_urn
+            else ""
+        )
+        elements.append(
+            {
+                "urn": activity_urn,
+                "author": author,
+                "text": text,
+                "url": url,
+                "likes": likes,
+                "comments": comments,
+            }
+        )
+    raw_paging = raw.get("paging") or {}
+    paging = {
+        "start": raw_paging.get("start", 0),
+        "count": raw_paging.get("count", 0),
+        "total": raw_paging.get("total", 0),
+    }
+    return {"elements": elements, "paging": paging}
+
+
 def main() -> None:
     """List posts from the LinkedIn feed."""
     params = json.load(sys.stdin)
@@ -69,7 +116,10 @@ def main() -> None:
     count = params.get("count", "10")
     start = params.get("start", "0")
 
-    json.dump(run_cli(["feed", "list", "--count", count, "--start", start]), sys.stdout)
+    raw = run_cli(["feed", "list", "--count", str(count), "--start", str(start)])
+    output = _compact_feed(raw)
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()

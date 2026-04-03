@@ -11,6 +11,6 @@ Stavrobot plugin wrapping [linkedin-rs](https://github.com/eisbaw/linkedin-rs) C
 
 - **auth_status** — Check session validity
 - **profile_me** / **profile_view** / **profile_visit** / **profile_viewers** — Profile operations
-- **feed_list** / **feed_react** / **feed_unreact** / **feed_comment** / **feed_post** — Feed operations
+- **feed_list** — Read feed
 - **search_people** / **search_jobs** — Search
 - **notifications_list** — Notifications

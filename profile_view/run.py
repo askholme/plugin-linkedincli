@@ -54,6 +54,68 @@ def run_cli(args: list[str]) -> dict:
         return {"output": stdout.decode().strip()}
 
 
+def _compact_profile(raw: dict) -> dict:
+    """Extract compact profile fields from a GraphQL profile response."""
+    # GraphQL response: unwrap first element if wrapped in elements[]
+    if "elements" in raw:
+        elements = raw.get("elements") or []
+        profile = elements[0] if elements else {}
+    else:
+        profile = raw
+
+    public_id = profile.get("publicIdentifier") or ""
+    url = f"https://www.linkedin.com/in/{public_id}" if public_id else ""
+
+    geo = (profile.get("geoLocation") or {}).get("geo") or {}
+    location = geo.get("defaultLocalizedName") or ""
+
+    industry_obj = profile.get("industry") or {}
+    industry = industry_obj.get("name") or ""
+
+    positions = []
+    pos_groups = profile.get("profilePositionGroups") or {}
+    for group in pos_groups.get("elements") or []:
+        inner = group.get("profilePositionInPositionGroup") or {}
+        for pos in inner.get("elements") or []:
+            dr = pos.get("dateRange") or {}
+            positions.append(
+                {
+                    "title": pos.get("title") or "",
+                    "company": pos.get("companyName") or "",
+                    "start_year": ((dr.get("start") or {}).get("year")),
+                    "end_year": ((dr.get("end") or {}).get("year")),
+                }
+            )
+
+    education = []
+    edu_obj = profile.get("profileEducations") or {}
+    for edu in edu_obj.get("elements") or []:
+        dr = edu.get("dateRange") or {}
+        education.append(
+            {
+                "school": edu.get("schoolName") or "",
+                "degree": edu.get("degreeName") or "",
+                "field": edu.get("fieldOfStudy") or "",
+                "start_year": ((dr.get("start") or {}).get("year")),
+                "end_year": ((dr.get("end") or {}).get("year")),
+            }
+        )
+
+    return {
+        "first_name": profile.get("firstName") or "",
+        "last_name": profile.get("lastName") or "",
+        "headline": profile.get("headline") or "",
+        "summary": profile.get("summary") or "",
+        "location": location,
+        "industry": industry,
+        "public_id": public_id,
+        "urn": profile.get("entityUrn") or "",
+        "url": url,
+        "positions": positions,
+        "education": education,
+    }
+
+
 def main() -> None:
     """View a LinkedIn profile by public identifier."""
     params = json.load(sys.stdin)
@@ -69,7 +131,10 @@ def main() -> None:
         print("Missing or invalid 'public_id' parameter.", file=sys.stderr)
         sys.exit(1)
 
-    json.dump(run_cli(["profile", "view", public_id]), sys.stdout)
+    raw = run_cli(["profile", "view", public_id])
+    output = _compact_profile(raw)
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()

@@ -54,6 +54,32 @@ def run_cli(args: list[str]) -> dict:
         return {"output": stdout.decode().strip()}
 
 
+def _compact_search_jobs(raw: dict) -> dict:
+    results = []
+    for el in raw.get("elements") or []:
+        job_card_union = el.get("jobCardUnion") or {}
+        card = job_card_union.get("jobPostingCard") or {}
+        if not card:
+            continue
+        results.append(
+            {
+                "title": ((card.get("title") or {}).get("text") or ""),
+                "company": ((card.get("primaryDescription") or {}).get("text") or ""),
+                "location": (
+                    (card.get("secondaryDescription") or {}).get("text") or ""
+                ),
+                "urn": card.get("entityUrn") or "",
+            }
+        )
+    raw_paging = raw.get("paging") or {}
+    paging = {
+        "start": raw_paging.get("start", 0),
+        "count": raw_paging.get("count", 0),
+        "total": raw_paging.get("total", 0),
+    }
+    return {"results": results, "paging": paging}
+
+
 def main() -> None:
     """Search for jobs on LinkedIn by keywords."""
     params = json.load(sys.stdin)
@@ -72,10 +98,12 @@ def main() -> None:
     count = params.get("count", "10")
     start = params.get("start", "0")
 
-    json.dump(
-        run_cli(["search", "jobs", keywords, "--count", count, "--start", start]),
-        sys.stdout,
+    raw = run_cli(
+        ["search", "jobs", keywords, "--count", str(count), "--start", str(start)]
     )
+    output = _compact_search_jobs(raw)
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()

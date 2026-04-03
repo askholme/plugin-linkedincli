@@ -54,6 +54,28 @@ def run_cli(args: list[str]) -> dict:
         return {"output": stdout.decode().strip()}
 
 
+def _compact_notifications(raw: dict) -> dict:
+    notifications = []
+    for el in raw.get("elements") or []:
+        notifications.append(
+            {
+                "headline": ((el.get("headline") or {}).get("text") or ""),
+                "sub_headline": ((el.get("subHeadline") or {}).get("text") or ""),
+                "time": ((el.get("kicker") or {}).get("text") or ""),
+                "type": el.get("contentType") or "",
+                "published_at": el.get("publishedAt"),
+                "read": bool(el.get("read")),
+            }
+        )
+    raw_paging = raw.get("paging") or {}
+    paging = {
+        "start": raw_paging.get("start", 0),
+        "count": raw_paging.get("count", 0),
+        "total": raw_paging.get("total", 0),
+    }
+    return {"notifications": notifications, "paging": paging}
+
+
 def main() -> None:
     """List LinkedIn notifications."""
     params = json.load(sys.stdin)
@@ -67,10 +89,12 @@ def main() -> None:
     count = params.get("count", "10")
     start = params.get("start", "0")
 
-    json.dump(
-        run_cli(["notifications", "list", "--count", count, "--start", start]),
-        sys.stdout,
+    raw = run_cli(
+        ["notifications", "list", "--count", str(count), "--start", str(start)]
     )
+    output = _compact_notifications(raw)
+    safe = json.dumps(output).replace("\\u0000", "")
+    sys.stdout.write(safe)
 
 
 main()
