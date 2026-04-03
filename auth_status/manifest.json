@@ -1,0 +1,5 @@
+{
+  "name": "auth_status",
+  "description": "Check the current LinkedIn authentication status.",
+  "entrypoint": "run.py"
+}

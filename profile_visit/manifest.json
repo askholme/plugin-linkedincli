@@ -1,0 +1,11 @@
+{
+  "name": "profile_visit",
+  "description": "Simulate visiting a LinkedIn profile (registers as a profile view).",
+  "entrypoint": "run.py",
+  "parameters": {
+    "public_id": {
+      "type": "string",
+      "description": "LinkedIn public identifier (vanity URL slug)"
+    }
+  }
+}

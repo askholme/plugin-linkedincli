@@ -1,0 +1,15 @@
+{
+  "name": "feed_unreact",
+  "description": "Remove a reaction from a LinkedIn post.",
+  "entrypoint": "run.py",
+  "parameters": {
+    "post_urn": {
+      "type": "string",
+      "description": "URN of the LinkedIn post to remove the reaction from"
+    },
+    "reaction_type": {
+      "type": "string",
+      "description": "Reaction type to remove (default: LIKE)"
+    }
+  }
+}

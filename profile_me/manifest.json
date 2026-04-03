@@ -1,0 +1,5 @@
+{
+  "name": "profile_me",
+  "description": "Retrieve the authenticated user's own LinkedIn profile.",
+  "entrypoint": "run.py"
+}

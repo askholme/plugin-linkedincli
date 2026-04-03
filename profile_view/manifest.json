@@ -1,0 +1,11 @@
+{
+  "name": "profile_view",
+  "description": "View a LinkedIn profile by public identifier (vanity URL slug).",
+  "entrypoint": "run.py",
+  "parameters": {
+    "public_id": {
+      "type": "string",
+      "description": "LinkedIn public identifier (vanity URL slug)"
+    }
+  }
+}

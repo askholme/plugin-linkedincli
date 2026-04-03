@@ -1,0 +1,19 @@
+{
+  "name": "search_people",
+  "description": "Search for people on LinkedIn by keywords.",
+  "entrypoint": "run.py",
+  "parameters": {
+    "keywords": {
+      "type": "string",
+      "description": "Search keywords"
+    },
+    "count": {
+      "type": "string",
+      "description": "Number of results to return (default: 10)"
+    },
+    "start": {
+      "type": "string",
+      "description": "Offset to start from (default: 0)"
+    }
+  }
+}

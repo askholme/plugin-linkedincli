@@ -1,0 +1,15 @@
+{
+  "name": "feed_list",
+  "description": "List posts from the LinkedIn feed.",
+  "entrypoint": "run.py",
+  "parameters": {
+    "count": {
+      "type": "string",
+      "description": "Number of posts to return (default: 10)"
+    },
+    "start": {
+      "type": "string",
+      "description": "Offset to start from (default: 0)"
+    }
+  }
+}

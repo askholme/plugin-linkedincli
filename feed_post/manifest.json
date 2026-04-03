@@ -1,0 +1,15 @@
+{
+  "name": "feed_post",
+  "description": "Create a new LinkedIn post.",
+  "entrypoint": "run.py",
+  "parameters": {
+    "text": {
+      "type": "string",
+      "description": "Text content of the post"
+    },
+    "visibility": {
+      "type": "string",
+      "description": "Post visibility (default: ANYONE)"
+    }
+  }
+}

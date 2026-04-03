@@ -1,0 +1,5 @@
+{
+  "name": "profile_viewers",
+  "description": "List people who recently viewed the authenticated user's LinkedIn profile.",
+  "entrypoint": "run.py"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "linkedincli",
+  "description": "Access LinkedIn via a reverse-engineered CLI: view profiles, read/post to feed, search people and jobs, and check notifications.",
+  "instructions": "Before using any tool, ensure the plugin is configured with a valid li_at cookie. The init script will authenticate automatically. All tools return JSON. Write operations (feed_post, feed_comment, feed_react, feed_unreact) hit LinkedIn's live systems — use with care.",
+  "init": {
+    "entrypoint": "init.py",
+    "async": true
+  },
+  "config": {
+    "li_at": {
+      "description": "LinkedIn li_at session cookie. Extract from browser DevTools: Application > Cookies > linkedin.com > li_at.",
+      "required": true
+    }
+  }
+}
