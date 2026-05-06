@@ -31,10 +31,20 @@ def main():
         return
 
     cli = (Path(__file__).resolve().parent / "bin" / "linkedin-cli").resolve()
-    result = subprocess.run(
-        [str(cli), "auth", "login", "--li-at", li_at],
-        capture_output=True,
-    )
+    args = [str(cli), "auth", "login", "--li-at", li_at]
+    cookies_file = config.get("cookies_file")
+    if cookies_file:
+        args.extend(["--cookies-file", str(cookies_file)])
+    jsessionid = config.get("jsessionid")
+    if jsessionid:
+        args.extend(["--jsessionid", str(jsessionid)])
+    li_gc = config.get("li_gc")
+    if li_gc:
+        args.extend(["--li-gc", str(li_gc)])
+    bcookie = config.get("bcookie")
+    if bcookie:
+        args.extend(["--bcookie", str(bcookie)])
+    result = subprocess.run(args, capture_output=True)
     if result.returncode != 0:
         sys.stderr.buffer.write(result.stderr)
         sys.exit(result.returncode)

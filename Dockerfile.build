@@ -1,10 +1,10 @@
-FROM --platform=linux/amd64 rust:1.88-slim-bookworm
+FROM rust:1.88-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git pkg-config libssl-dev ca-certificates \
+    pkg-config libssl-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/eisbaw/linkedin-rs.git /build
+COPY linkedin /build/linkedin
 
 WORKDIR /build/linkedin
 RUN cargo build --release -p linkedin-cli

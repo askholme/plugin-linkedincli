@@ -10,6 +10,18 @@
     "start": {
       "type": "string",
       "description": "Offset to start from (default: 0)"
+    },
+    "sort": {
+      "type": "string",
+      "description": "Feed sort order: `relevance` (default) or `recent`."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Pagination cursor for `sort=recent`. Omit to start from the newest page."
+    },
+    "pages": {
+      "type": "string",
+      "description": "Number of recent-feed pages to fetch when `sort=recent` (default: 1)."
     }
   }
 }

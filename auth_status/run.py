@@ -3,7 +3,7 @@
 # dependencies = []
 # ///
 
-import json, subprocess, sys
+import json, os, subprocess, sys
 from pathlib import Path
 
 CLI = (Path(__file__).resolve().parent.parent / "bin" / "linkedin-cli").resolve()
@@ -13,7 +13,9 @@ KNOWN_PARAMS: set[str] = set()
 
 def ensure_auth() -> None:
     """If no session exists, attempt auth login from config.json."""
-    session_dir = Path.home() / ".config" / "linkedin-cli"
+    session_dir = Path(
+        os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    ) / "linkedin"
     session_file = session_dir / "session.json"
     if session_file.exists():
         return
@@ -29,10 +31,20 @@ def ensure_auth() -> None:
     if not li_at:
         print("Not authenticated and li_at is missing in config.json.", file=sys.stderr)
         sys.exit(1)
-    result = subprocess.run(
-        [str(CLI), "auth", "login", "--li-at", li_at],
-        capture_output=True,
-    )
+    args = [str(CLI), "auth", "login", "--li-at", li_at]
+    cookies_file = config.get("cookies_file")
+    if cookies_file:
+        args.extend(["--cookies-file", str(cookies_file)])
+    jsessionid = config.get("jsessionid")
+    if jsessionid:
+        args.extend(["--jsessionid", str(jsessionid)])
+    li_gc = config.get("li_gc")
+    if li_gc:
+        args.extend(["--li-gc", str(li_gc)])
+    bcookie = config.get("bcookie")
+    if bcookie:
+        args.extend(["--bcookie", str(bcookie)])
+    result = subprocess.run(args, capture_output=True)
     if result.returncode != 0:
         sys.stderr.buffer.write(result.stderr)
         sys.exit(result.returncode)

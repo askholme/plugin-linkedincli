@@ -1,7 +1,7 @@
 {
   "name": "linkedincli",
   "description": "Access LinkedIn via a reverse-engineered CLI: view profiles, read feed, search people and jobs, and check notifications.",
-  "instructions": "Read-only LinkedIn access. Before using any tool, ensure the plugin is configured with a valid li_at cookie. The init script will authenticate automatically. All tools return compact JSON with only the useful fields extracted.",
+  "instructions": "Read-only LinkedIn access. Configure at least `li_at`. For `feed_list` with `sort=recent`, also provide web cookies (`jsessionid`, `li_gc`, `bcookie`) or `cookies_file`. The init script authenticates automatically. All tools return compact JSON with only the useful fields extracted.",
   "init": {
     "entrypoint": "init.py",
     "async": true
@@ -10,6 +10,18 @@
     "li_at": {
       "description": "LinkedIn li_at session cookie. Extract from browser DevTools: Application > Cookies > linkedin.com > li_at.",
       "required": true
+    },
+    "jsessionid": {
+      "description": "Optional LinkedIn JSESSIONID cookie for web-only endpoints such as recent feed sorting."
+    },
+    "li_gc": {
+      "description": "Optional LinkedIn li_gc cookie for web-only endpoints such as recent feed sorting."
+    },
+    "bcookie": {
+      "description": "Optional LinkedIn bcookie cookie for web-only endpoints such as recent feed sorting."
+    },
+    "cookies_file": {
+      "description": "Optional path to a Playwright-format JSON cookie export. Used for web-only endpoints such as recent feed sorting."
     }
   }
 }

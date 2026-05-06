@@ -3,22 +3,24 @@
 # dependencies = []
 # ///
 
-import json, re, subprocess, sys
+import json, os, re, subprocess, sys
 from pathlib import Path
 
 CLI = (Path(__file__).resolve().parent.parent / "bin" / "linkedin-cli").resolve()
 
-KNOWN_PARAMS = {"count", "start"}
+KNOWN_PARAMS = {"count", "start", "sort", "cursor", "pages"}
 
 _UPDATE_V2_KEY = "com.linkedin.voyager.feed.render.UpdateV2"
 _ACTIVITY_RE = re.compile(r"(urn:li:activity:[^,)]+)")
 
 
-def ensure_auth() -> None:
+def ensure_auth(force: bool = False) -> None:
     """If no session exists, attempt auth login from config.json."""
-    session_dir = Path.home() / ".config" / "linkedin-cli"
+    session_dir = Path(
+        os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    ) / "linkedin"
     session_file = session_dir / "session.json"
-    if session_file.exists():
+    if session_file.exists() and not force:
         return
     config_path = Path(__file__).resolve().parent.parent / "config.json"
     if not config_path.exists():
@@ -32,10 +34,20 @@ def ensure_auth() -> None:
     if not li_at:
         print("Not authenticated and li_at is missing in config.json.", file=sys.stderr)
         sys.exit(1)
-    result = subprocess.run(
-        [str(CLI), "auth", "login", "--li-at", li_at],
-        capture_output=True,
-    )
+    args = [str(CLI), "auth", "login", "--li-at", li_at]
+    cookies_file = config.get("cookies_file")
+    if cookies_file:
+        args.extend(["--cookies-file", str(cookies_file)])
+    jsessionid = config.get("jsessionid")
+    if jsessionid:
+        args.extend(["--jsessionid", str(jsessionid)])
+    li_gc = config.get("li_gc")
+    if li_gc:
+        args.extend(["--li-gc", str(li_gc)])
+    bcookie = config.get("bcookie")
+    if bcookie:
+        args.extend(["--bcookie", str(bcookie)])
+    result = subprocess.run(args, capture_output=True)
     if result.returncode != 0:
         sys.stderr.buffer.write(result.stderr)
         sys.exit(result.returncode)
@@ -66,6 +78,32 @@ def _extract_activity_urn(entity_urn: str) -> str:
 
 
 def _compact_feed(raw: dict) -> dict:
+    if raw.get("sort") == "recent":
+        elements = []
+        for post in raw.get("posts") or []:
+            urn = post.get("activity_urn") or ""
+            elements.append(
+                {
+                    "urn": urn,
+                    "author": post.get("author_name") or "",
+                    "headline": post.get("author_headline") or "",
+                    "text": post.get("body_text") or "",
+                    "url": f"https://www.linkedin.com/feed/update/{urn}" if urn else "",
+                    "likes": post.get("num_reactions") or 0,
+                    "comments": post.get("num_comments") or 0,
+                    "reposts": post.get("num_reposts") or 0,
+                }
+            )
+        return {
+            "sort": "recent",
+            "elements": elements,
+            "paging": {
+                "count": raw.get("count", 0),
+                "pages": raw.get("pages", 0),
+                "next_cursor": raw.get("next_cursor") or "",
+            },
+        }
+
     elements = []
     for el in raw.get("elements") or []:
         entity_urn = el.get("entityUrn") or ""
@@ -111,12 +149,25 @@ def main() -> None:
         print(f"Unknown parameters: {', '.join(sorted(unknown))}", file=sys.stderr)
         sys.exit(1)
 
-    ensure_auth()
+    sort = str(params.get("sort", "relevance"))
+    if sort not in {"relevance", "recent"}:
+        print("Invalid 'sort' parameter. Expected 'relevance' or 'recent'.", file=sys.stderr)
+        sys.exit(1)
+
+    ensure_auth(force=sort == "recent")
 
     count = params.get("count", "10")
     start = params.get("start", "0")
+    cursor = params.get("cursor")
+    pages = params.get("pages", "1")
 
-    raw = run_cli(["feed", "list", "--count", str(count), "--start", str(start)])
+    args = ["feed", "list", "--count", str(count), "--start", str(start)]
+    if sort == "recent":
+        args.extend(["--sort", "recent", "--pages", str(pages)])
+        if cursor:
+            args.extend(["--cursor", str(cursor)])
+
+    raw = run_cli(args)
     output = _compact_feed(raw)
     safe = json.dumps(output).replace("\\u0000", "")
     sys.stdout.write(safe)
