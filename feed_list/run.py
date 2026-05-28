@@ -8,7 +8,7 @@ from pathlib import Path
 
 CLI = (Path(__file__).resolve().parent.parent / "bin" / "linkedin-cli").resolve()
 
-KNOWN_PARAMS = {"count", "start", "sort", "cursor", "pages"}
+KNOWN_PARAMS = {"count", "start", "sort", "cursor"}
 
 _UPDATE_V2_KEY = "com.linkedin.voyager.feed.render.UpdateV2"
 _ACTIVITY_RE = re.compile(r"(urn:li:activity:[^,)]+)")
@@ -77,43 +77,17 @@ def _extract_activity_urn(entity_urn: str) -> str:
     return m.group(1) if m else (entity_urn or "")
 
 
-def _compact_feed(raw: dict) -> dict:
-    if raw.get("sort") == "recent":
-        elements = []
-        for post in raw.get("posts") or []:
-            urn = post.get("activity_urn") or ""
-            elements.append(
-                {
-                    "urn": urn,
-                    "author": post.get("author_name") or "",
-                    "headline": post.get("author_headline") or "",
-                    "text": post.get("body_text") or "",
-                    "url": f"https://www.linkedin.com/feed/update/{urn}" if urn else "",
-                    "likes": post.get("num_reactions") or 0,
-                    "comments": post.get("num_comments") or 0,
-                    "reposts": post.get("num_reposts") or 0,
-                }
-            )
-        return {
-            "sort": "recent",
-            "elements": elements,
-            "paging": {
-                "count": raw.get("count", 0),
-                "pages": raw.get("pages", 0),
-                "next_cursor": raw.get("next_cursor") or "",
-            },
-        }
-
+def _compact_feed(raw: dict, sort: str) -> dict:
     elements = []
     for el in raw.get("elements") or []:
         entity_urn = el.get("entityUrn") or ""
         activity_urn = _extract_activity_urn(entity_urn)
         v2 = (el.get("value") or {}).get(_UPDATE_V2_KEY) or {}
-        actor = v2.get("actor") or {}
+        actor = v2.get("actor") or el.get("actor") or {}
         author = (actor.get("name") or {}).get("text") or ""
-        commentary = v2.get("commentary") or {}
+        commentary = v2.get("commentary") or el.get("commentary") or {}
         text = ((commentary.get("text") or {}).get("text") or "") if commentary else ""
-        social = v2.get("socialDetail") or {}
+        social = v2.get("socialDetail") or el.get("socialDetail") or {}
         counts = social.get("totalSocialActivityCounts") or {}
         likes = counts.get("numLikes") or 0
         comments = counts.get("numComments") or 0
@@ -133,12 +107,14 @@ def _compact_feed(raw: dict) -> dict:
             }
         )
     raw_paging = raw.get("paging") or {}
+    next_cursor = (raw.get("metadata") or {}).get("paginationToken") or ""
     paging = {
         "start": raw_paging.get("start", 0),
         "count": raw_paging.get("count", 0),
         "total": raw_paging.get("total", 0),
+        "next_cursor": next_cursor,
     }
-    return {"elements": elements, "paging": paging}
+    return {"sort": sort, "elements": elements, "paging": paging}
 
 
 def main() -> None:
@@ -159,16 +135,15 @@ def main() -> None:
     count = params.get("count", "10")
     start = params.get("start", "0")
     cursor = params.get("cursor")
-    pages = params.get("pages", "1")
 
     args = ["feed", "list", "--count", str(count), "--start", str(start)]
     if sort == "recent":
-        args.extend(["--sort", "recent", "--pages", str(pages)])
-        if cursor:
-            args.extend(["--cursor", str(cursor)])
+        args.extend(["--sort", "recent"])
+    if cursor:
+        args.extend(["--cursor", str(cursor)])
 
     raw = run_cli(args)
-    output = _compact_feed(raw)
+    output = _compact_feed(raw, sort)
     safe = json.dumps(output).replace("\\u0000", "")
     sys.stdout.write(safe)
 

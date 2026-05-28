@@ -17,11 +17,7 @@
     },
     "cursor": {
       "type": "string",
-      "description": "Pagination cursor for `sort=recent`. Omit to start from the newest page."
-    },
-    "pages": {
-      "type": "string",
-      "description": "Number of recent-feed pages to fetch when `sort=recent` (default: 1)."
+      "description": "Pagination cursor token from a prior call's `paging.next_cursor`. Omit to start from the first page."
     }
   }
 }
