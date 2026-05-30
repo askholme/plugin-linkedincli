@@ -9,7 +9,7 @@
     },
     "start": {
       "type": "string",
-      "description": "Offset to start from (default: 0)"
+      "description": "Offset to start from. When paginating with `cursor`, set to the previous response's `paging.start + paging.count`."
     },
     "sort": {
       "type": "string",

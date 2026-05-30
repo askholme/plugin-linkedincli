@@ -133,10 +133,12 @@ def main() -> None:
     ensure_auth(force=sort == "recent")
 
     count = params.get("count", "10")
-    start = params.get("start", "0")
+    start = params.get("start")
     cursor = params.get("cursor")
 
-    args = ["feed", "list", "--count", str(count), "--start", str(start)]
+    args = ["feed", "list", "--count", str(count)]
+    if start is not None:
+        args.extend(["--start", str(start)])
     if sort == "recent":
         args.extend(["--sort", "recent"])
     if cursor:
